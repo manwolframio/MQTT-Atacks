@@ -69,38 +69,56 @@ def build_payload(zone=1, alarm=0, priority=1, status=1):
 def build_topic(patient_id, measurement):
     return f"uci/patients/patient-{patient_id}/{measurement}/1"
 
-# Conexión MQTT
-def on_connect(client, userdata, flags, rc):
+# Callback de conexión MQTT
+def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
         print("[MQTT] Conectado al broker.")
     else:
         print(f"[MQTT] Error de conexión. Código: {rc}")
 
-# Cliente MQTT
-client = mqtt.Client(client_id=client_id)
+# Cliente MQTT v5
+client = mqtt.Client(client_id=client_id, protocol=mqtt.MQTTv5)
 if username and password:
     client.username_pw_set(username, password)
-
 client.on_connect = on_connect
 
 # Esperar al broker antes de conectar
 wait_for_broker(broker, port)
-client.connect(broker, port)
+client.connect(broker, port,keepalive=5)
 client.loop_start()
 
 # Bucle principal de publicación
+publicaciones = 0
+
 try:
     while True:
         payload = build_payload()
         topic = build_topic(patient_id, measurement)
         message = json.dumps(payload)
+
         result = client.publish(topic, message)
         if result.rc == 0:
             print(f"[Publicado] → Topic: {topic}")
             print(f"[Mensaje]  → {message}")
         else:
             print(f"[Error] Falló la publicación. Código: {result.rc}")
+
+        publicaciones += 1
+        if publicaciones % 10 == 0:
+            try:
+                if not client.is_connected():
+                    raise ConnectionError("Cliente desconectado.")
+            except Exception as e:
+                print(f"[PING] Error: {e}")
+                print("[RECONEXIÓN] Reintentando conexión con el broker...")
+                client.loop_stop()
+                wait_for_broker(broker, port)
+                client.reconnect()
+                client.loop_start()
+                print("[RECONEXIÓN] Reconexión completa.")
+
         time.sleep(interval_ms / 1000.0)
+
 except KeyboardInterrupt:
     print("\n[FIN] Publicador detenido por el usuario.")
     client.loop_stop()
