@@ -53,11 +53,11 @@ def build_payload(zone=1, alarm=0, priority=1, status=1):
     else:
         value = round(random.uniform(0, 100), 2)
 
-    timestamp = get_ntp_time()
-    ts_str = timestamp.strftime("%Y-%m-%d %H:%M:%S") if timestamp else "NTP_UNSYNCED"
+    #timestamp = get_ntp_time()
+    #ts_str = timestamp.strftime("%Y-%m-%d %H:%M:%S") if timestamp else "NTP_UNSYNCED"
 
     return {
-        "timestamp": ts_str,
+        "timestamp": "Hola",
         "sensor_status": status,
         "zone": zone,
         "value": value,
