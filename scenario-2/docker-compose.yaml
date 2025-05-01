@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   emqx:
     image: emqx/emqx
@@ -23,53 +25,47 @@ services:
       EMQX_LISTENER__SSL__EXTERNAL__ENABLE: "true"
       EMQX_LISTENER__SSL__EXTERNAL__KEYFILE: "/opt/emqx/certs/key.pem"
       EMQX_LISTENER__SSL__EXTERNAL__CERTFILE: "/opt/emqx/certs/cert.pem"
-
     networks:
       mi_red:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 172.30.0.10
+
   publisher:
     build: ../mqtt-publisher
-    container_name: publisher
     depends_on:
       - emqx
     environment:
-      MQTT_BROKER: 172.20.0.10
+      MQTT_BROKER: 172.30.0.10
       MQTT_PORT: 1883
-      MQTT_CLIENT_ID: sensor:temperature:001
       PATIENT_ID: 001
       MEASUREMENT_TYPE: temperature
-      MQTT_INTERVAL: 1000
-      # Opcional si usas autenticación
-      # MQTT_USERNAME: iot-user
-      # MQTT_PASSWORD: iot
-
+      MQTT_INTERVAL: 10
     networks:
       mi_red:
-        ipv4_address: 172.20.0.20
+    deploy:
+      replicas: 300
 
   subscriber:
     build: ../mqtt-subscriber
-    container_name: subscriber
     depends_on:
       - emqx
     environment:
-      MQTT_BROKER: 172.20.0.10
+      MQTT_BROKER: 172.30.0.10
       MQTT_PORT: 1883
       MQTT_TOPIC: uci/patients/#
-      MQTT_CLIENT_ID: subscriber-console
     networks:
-      mi_red:
-        ipv4_address: 172.20.0.30
+      - mi_red
     tty: true
     stdin_open: true
+    deploy:
+      replicas: 1
 
 networks:
   mi_red:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/24
-          gateway: 172.20.0.1
+        - subnet: 172.30.0.0/22
+          gateway: 172.30.0.1
 
 volumes:
   emqx-data:

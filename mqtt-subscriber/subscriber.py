@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "uci/patients/#")
-CLIENT_ID = os.getenv("MQTT_CLIENT_ID", "subscriber-console")
+CLIENT_ID = os.getenv("MQTT_CLIENT_ID", f"subscriber-{socket.gethostname()}")
 
 message_queue = queue.Queue()
 
@@ -52,12 +52,15 @@ def on_connect(client, userdata, flags, reasonCode, properties):
         print(f"[MQTT] Suscrito a: {MQTT_TOPIC}")
     else:
         print(f"[MQTT] Error de conexión: {reasonCode}")
+def on_disconnect(client, userdata, reasonCode, properties):
+    print(f"[MQTT] Desconectado del broker. Código: {reasonCode}")
 
 client = mqtt.Client(
     client_id=CLIENT_ID,
     protocol=mqtt.MQTTv5
 )
 
+client.on_disconnect = on_disconnect
 client.on_connect = on_connect
 client.on_message = on_message
 
@@ -71,9 +74,10 @@ def display_loop():
         try:
             topic, data = message_queue.get(timeout=1)
             parts = topic.split('/')
-            patient_id = parts[3] if len(parts) > 3 else "desconocido"
-            measurement = parts[4] if len(parts) > 4 else "desconocido"
-            zone = parts[5] if len(parts) > 5 else "?"
+
+            patient_id = parts[2].replace("patient-", "") if len(parts) > 2 else "desconocido"
+            measurement = parts[3] if len(parts) > 3 else "desconocido"
+            zone = data.get("zone", "?")
 
             table = [
                 ["Topic", topic],
@@ -91,5 +95,5 @@ def display_loop():
             print("\n\n")
         except queue.Empty:
             continue
-
+        
 display_loop()

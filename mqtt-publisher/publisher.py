@@ -10,9 +10,9 @@ from datetime import datetime
 # Configuración desde variables de entorno
 broker = os.getenv("MQTT_BROKER", "localhost")
 port = int(os.getenv("MQTT_PORT", "1883"))
-client_id = os.getenv("MQTT_CLIENT_ID", "sensor:temperature:001")
-patient_id = os.getenv("PATIENT_ID", "001")
 measurement = os.getenv("MEASUREMENT_TYPE", "temperature")
+client_id = os.getenv("MQTT_CLIENT_ID", f"sensor:{measurement}-{socket.gethostname()}")
+patient_id = os.getenv("PATIENT_ID", "001")
 interval_ms = int(os.getenv("MQTT_INTERVAL", "1000"))
 username = os.getenv("MQTT_USERNAME", "")
 password = os.getenv("MQTT_PASSWORD", "")
@@ -67,7 +67,7 @@ def build_payload(zone=1, alarm=0, priority=1, status=1):
 
 # Construir el topic de publicación
 def build_topic(patient_id, measurement):
-    return f"uci/patients/patient-{patient_id}/{measurement}/1"
+    return f"uci/patients/patient-{patient_id}/{measurement}"
 
 # Callback de conexión MQTT
 def on_connect(client, userdata, flags, rc, properties=None):
